@@ -16,7 +16,10 @@
 #define FR_LOG_SIZE 64
 #define FR_LABEL_SIZE 16
 #define FR_EXPLORED_BYTES ((FR_MAP_W * FR_MAP_H + 7) / 8)
-#define FR_MAX_TILE_DELTAS 64
+#define FR_FLOOR_EXPLORED_W ((FR_MAP_W + 1) / 2)
+#define FR_FLOOR_EXPLORED_H ((FR_MAP_H + 1) / 2)
+#define FR_FLOOR_EXPLORED_BYTES ((FR_FLOOR_EXPLORED_W * FR_FLOOR_EXPLORED_H + 7) / 8)
+#define FR_MAX_TILE_DELTAS 48
 
 #define FR_TILE_TERRAIN_MASK 0x0F
 #define FR_TILE_VISIBLE 0x10
@@ -350,6 +353,15 @@ typedef struct {
 } FrItem;
 
 typedef struct {
+    uint8_t type;
+    uint8_t subtype;
+    uint8_t x;
+    uint8_t y;
+    uint8_t amount;
+    uint8_t flags;
+} FrSavedItem;
+
+typedef struct {
     bool active;
     uint8_t x;
     uint8_t y;
@@ -377,9 +389,17 @@ typedef struct {
 } FrTerrainField;
 
 typedef struct {
-    uint16_t pos;
-    uint8_t tile;
-} FrTileDelta;
+    bool active;
+    uint8_t type;
+    uint8_t x;
+    uint8_t y;
+    uint8_t hp;
+    uint8_t effects;
+    uint8_t fx_timer[8];
+    uint8_t flags;
+    uint8_t pack_id;
+    uint8_t cooldown;
+} FrSavedActor;
 
 typedef struct {
     bool generated;
@@ -388,10 +408,11 @@ typedef struct {
     uint8_t down_x;
     uint8_t down_y;
     uint8_t tile_delta_count;
-    uint8_t explored[FR_EXPLORED_BYTES];
-    FrTileDelta tile_deltas[FR_MAX_TILE_DELTAS];
-    FrActor actors[FR_MAX_ACTORS];
-    FrItem items[FR_MAX_ITEMS];
+    uint8_t explored[FR_FLOOR_EXPLORED_BYTES];
+    uint16_t tile_delta_pos[FR_MAX_TILE_DELTAS];
+    uint8_t tile_delta_tile[FR_MAX_TILE_DELTAS];
+    FrSavedActor actors[FR_MAX_ACTORS];
+    FrSavedItem items[FR_MAX_ITEMS];
     FrTrap traps[FR_MAX_TRAPS];
 } FrFloorState;
 

@@ -126,8 +126,34 @@ static bool find_floor_next_to_wall(const FrGame* game, uint8_t* floor_x, uint8_
 }
 
 static void assert_runtime_floor_equal(const FrGame* expected, const FrGame* actual) {
-    assert(memcmp(expected->tiles, actual->tiles, sizeof(expected->tiles)) == 0);
-    assert(memcmp(expected->actors, actual->actors, sizeof(expected->actors)) == 0);
+    for(uint8_t y = 0; y < FR_MAP_H; y++) {
+        for(uint8_t x = 0; x < FR_MAP_W; x++) {
+            uint8_t expected_tile = expected->tiles[y][x] & (uint8_t)~FR_TILE_EXPLORED;
+            uint8_t actual_tile = actual->tiles[y][x] & (uint8_t)~FR_TILE_EXPLORED;
+            assert(expected_tile == actual_tile);
+            if((expected->tiles[y][x] & FR_TILE_EXPLORED) != 0 &&
+               (expected->tiles[y][x] & FR_TILE_TERRAIN_MASK) != FR_TERR_WALL) {
+                assert((actual->tiles[y][x] & FR_TILE_EXPLORED) != 0);
+            }
+        }
+    }
+    for(uint8_t i = 0; i < FR_MAX_ACTORS; i++) {
+        const FrActor* a = &expected->actors[i];
+        const FrActor* b = &actual->actors[i];
+        assert(a->active == b->active);
+        if(!a->active) continue;
+        assert(a->type == b->type);
+        assert(a->x == b->x);
+        assert(a->y == b->y);
+        assert(a->hp == b->hp);
+        assert(a->max_hp == b->max_hp);
+        assert(a->dmg == b->dmg);
+        assert(a->effects == b->effects);
+        assert(memcmp(a->fx_timer, b->fx_timer, sizeof(a->fx_timer)) == 0);
+        assert(a->flags == b->flags);
+        assert(a->pack_id == b->pack_id);
+        assert(a->cooldown == b->cooldown);
+    }
     assert(memcmp(expected->items, actual->items, sizeof(expected->items)) == 0);
     assert(memcmp(expected->traps, actual->traps, sizeof(expected->traps)) == 0);
 }

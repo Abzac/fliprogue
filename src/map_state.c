@@ -13,13 +13,15 @@ void fr_record_tile_delta(FrGame* game, uint8_t x, uint8_t y) {
     uint16_t pos = (uint16_t)y * FR_MAP_W + x;
     uint8_t tile = fr_tile_core(game, x, y);
     for(uint8_t i = 0; i < floor->tile_delta_count; i++) {
-        if(floor->tile_deltas[i].pos == pos) {
-            floor->tile_deltas[i].tile = tile;
+        if(floor->tile_delta_pos[i] == pos) {
+            floor->tile_delta_tile[i] = tile;
             return;
         }
     }
     if(floor->tile_delta_count < FR_MAX_TILE_DELTAS) {
-        floor->tile_deltas[floor->tile_delta_count++] = (FrTileDelta){pos, tile};
+        floor->tile_delta_pos[floor->tile_delta_count] = pos;
+        floor->tile_delta_tile[floor->tile_delta_count] = tile;
+        floor->tile_delta_count++;
     }
 }
 

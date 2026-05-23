@@ -49,6 +49,9 @@ int main(void) {
     test_v07_food_spawn_scales_by_depth();
     test_stairs_orb_and_victory_summary();
     test_v071_floor_state_persists_when_returning();
+    test_v12_tile_delta_budget_keeps_important_changes();
+    test_v12_path_queue_overflow_fails_safely();
+    test_v12_coarse_explored_does_not_restore_extra_walls();
     test_v072_compact_floor_state_restores_full_runtime_floor();
     test_xp_level_skills();
     test_v12_warrior_perks_have_gameplay_effects();

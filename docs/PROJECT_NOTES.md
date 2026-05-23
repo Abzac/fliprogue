@@ -83,13 +83,28 @@ Small content slices to consider after the architecture is calmer:
 - chests with a compact choose-what-to-take menu, not automatic bulk pickup;
 - primitive merchants with a tiny inventory and simple prices, preferably one clear screen rather than a full shop simulator.
 
+## v1.2 Notes
+
+v1.2 is a stability and release-polish update after the first public-ready
+v1.1 line.
+
+- Saved floor state is more compact: saved actors/items are packed, explored
+  memory is stored as a 2x2 coarse bitset, tile deltas are capped at 48, and
+  the pathfinding queue is smaller with a safe overflow failure.
+- Coarse explored restore avoids marking extra wall tiles as remembered, so
+  returning to an upper floor should not show doubled walls outside vision.
+- Low-HP LED feedback now resets RGB before setting its warning color and uses
+  a slower red/dark-red pulse instead of leaking the previous green state.
+- The title screen, manifest, README, changelog, and public tables identify the
+  app as v1.2.
+
 ## v1.1 Notes
 
 v1.1 is the first public-ready release line. The game is still a pocket dungeon,
 but the world now has enough persistence and texture to feel like a complete
 run rather than a prototype.
 
-- The title screen, manifest, and README now identify the app as v1.1.
+- The title screen, manifest, and README identify the app as v1.1.
 - High Scores are persistent on SD at `/ext/apps_data/fliprogue/hiscores.txt`.
   Orb runs sort above non-Orb runs, then gold decides the table.
 - `Sound: On/Off` persists as `/ext/apps_data/fliprogue/settings.txt` with

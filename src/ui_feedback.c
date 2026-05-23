@@ -126,6 +126,7 @@ static void feedback_send_led(
     uint8_t blue) {
     if(!force && state == app->led_state) return;
     notification_message(app->notifications, &sequence_blink_stop);
+    notification_message(app->notifications, &sequence_reset_rgb);
     message_led_red.data.led.value = red;
     message_led_green.data.led.value = green;
     message_led_blue.data.led.value = blue;
@@ -146,7 +147,7 @@ void feedback_update_led(AppContext* app, bool force) {
     bool poisoned = (effects & FR_FX_POISONED) != 0;
     bool starving = fr_hunger_state(app->game) == FR_HUNGER_STARVING;
     uint8_t phase = (uint8_t)((furi_get_tick() / 250u) & 1u);
-    uint8_t slow_phase = (uint8_t)((furi_get_tick() / 750u) & 1u);
+    uint8_t slow_phase = (uint8_t)((furi_get_tick() / 1000u) & 1u);
     uint8_t state = 1;
     uint8_t red = 0;
     uint8_t green = 255;
@@ -169,7 +170,7 @@ void feedback_update_led(AppContext* app, bool force) {
         blue = 0;
     } else if(low) {
         state = (uint8_t)(16u + slow_phase);
-        red = slow_phase ? 255 : 0;
+        red = slow_phase ? 255 : 90;
         green = 0;
         blue = 0;
     } else if(burning) {

@@ -36,8 +36,9 @@ static void test_new_game_defaults(void) {
 }
 
 static void test_v072_memory_budget(void) {
-    assert(sizeof(FrFloorState) < 1600);
-    assert(sizeof(FrGame) < 32768);
+    assert(FR_MAX_TILE_DELTAS == 48);
+    assert(sizeof(FrFloorState) < 900);
+    assert(sizeof(FrGame) < 22000);
 }
 
 static void test_v10_ui_page_math(void) {

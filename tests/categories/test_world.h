@@ -445,6 +445,58 @@ static void test_v071_floor_state_persists_when_returning(void) {
     assert(fr_get_terrain(&game, mark_x, mark_y) == FR_TERR_PUDDLE);
 }
 
+static void test_v12_tile_delta_budget_keeps_important_changes(void) {
+    FrGame game;
+    make_empty_test_room(&game);
+    game.floor = 1;
+    fr_init_floor_state(&game, 1, 5, 5, 10, 5);
+    game.suppress_floor_state_save = 1;
+
+    for(uint8_t i = 0; i < FR_MAX_TILE_DELTAS; i++) {
+        uint8_t x = (uint8_t)(1 + (i % (FR_MAP_W - 2)));
+        uint8_t y = (uint8_t)(1 + (i / (FR_MAP_W - 2)));
+        fr_set_terrain(&game, x, y, (i & 1u) != 0 ? FR_TERR_PUDDLE : FR_TERR_GRASS_TRAMPLED);
+    }
+
+    FrFloorState* floor = &game.floors[0];
+    assert(floor->tile_delta_count == FR_MAX_TILE_DELTAS);
+    for(uint8_t i = 0; i < FR_MAX_TILE_DELTAS; i++) {
+        uint8_t x = (uint8_t)(floor->tile_delta_pos[i] % FR_MAP_W);
+        uint8_t y = (uint8_t)(floor->tile_delta_pos[i] / FR_MAP_W);
+        assert(fr_get_terrain(&game, x, y) == floor->tile_delta_tile[i]);
+    }
+}
+
+static void test_v12_path_queue_overflow_fails_safely(void) {
+    FrGame game;
+    make_empty_test_room(&game);
+    for(uint8_t y = 0; y < FR_MAP_H; y++) {
+        for(uint8_t x = 0; x < FR_MAP_W; x++) fr_set_terrain(&game, x, y, FR_TERR_FLOOR);
+    }
+    assert(!fr_path_exists(&game, 1, 1, (uint8_t)(FR_MAP_W - 2), (uint8_t)(FR_MAP_H - 2)));
+}
+
+static void test_v12_coarse_explored_does_not_restore_extra_walls(void) {
+    FrGame game;
+    make_empty_test_room(&game);
+    game.floor = 1;
+    fr_set_terrain(&game, 7, 4, FR_TERR_WALL);
+    for(uint8_t y = 0; y < FR_MAP_H; y++) {
+        for(uint8_t x = 0; x < FR_MAP_W; x++) {
+            game.tiles[y][x] &= (uint8_t)~(FR_TILE_VISIBLE | FR_TILE_EXPLORED);
+        }
+    }
+    game.tiles[4][6] |= FR_TILE_EXPLORED;
+    fr_init_floor_state(&game, 1, 5, 5, 10, 5);
+
+    game.tiles[4][6] &= (uint8_t)~FR_TILE_EXPLORED;
+    game.tiles[4][7] &= (uint8_t)~FR_TILE_EXPLORED;
+    fr_apply_saved_floor_state(&game, 1);
+
+    assert((game.tiles[4][6] & FR_TILE_EXPLORED) != 0);
+    assert((game.tiles[4][7] & FR_TILE_EXPLORED) == 0);
+}
+
 static void test_v072_compact_floor_state_restores_full_runtime_floor(void) {
     FrGame game;
     fr_game_init_class(&game, 606u, FR_CLASS_RANGER);
@@ -514,6 +566,18 @@ static void test_v072_compact_floor_state_restores_full_runtime_floor(void) {
     assert(game.floor == 1);
 
     assert_runtime_floor_equal(&expected, &game);
+    assert((game.tiles[delta_y][delta_x] & FR_TILE_EXPLORED) != 0);
+    assert((game.tiles[delta_y & (uint8_t)~1u][delta_x & (uint8_t)~1u] & FR_TILE_EXPLORED) != 0);
+    for(uint8_t i = 0; i < FR_MAX_ITEMS; i++) {
+        if(!expected.items[i].active) continue;
+        assert(game.items[i].active);
+        assert(game.items[i].type == expected.items[i].type);
+        assert(game.items[i].subtype == expected.items[i].subtype);
+        assert(game.items[i].x == expected.items[i].x);
+        assert(game.items[i].y == expected.items[i].y);
+        assert(game.items[i].amount == expected.items[i].amount);
+        assert(game.items[i].flags == expected.items[i].flags);
+    }
 }
 
 static void test_v07_dew_from_grass_heals_and_records_event(void) {

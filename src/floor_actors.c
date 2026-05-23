@@ -34,10 +34,11 @@ static bool fr_add_actor_to_floor_state(FrFloorState* floor, const FrActor* acto
     }
     for(uint8_t i = 0; i < FR_MAX_ACTORS; i++) {
         if(floor->actors[i].active) continue;
-        floor->actors[i] = *actor;
-        floor->actors[i].x = x;
-        floor->actors[i].y = y;
-        floor->actors[i].active = true;
+        FrActor traveler = *actor;
+        traveler.x = x;
+        traveler.y = y;
+        traveler.active = true;
+        fr_saved_actor_from_actor(&floor->actors[i], &traveler);
         return true;
     }
     return false;
@@ -57,7 +58,7 @@ static bool fr_add_actor_to_current_floor(FrGame* game, const FrActor* actor, ui
 }
 
 static bool fr_try_move_actor_floor(FrFloorState* floor, uint8_t actor_index, int8_t dx, int8_t dy) {
-    FrActor* actor = &floor->actors[actor_index];
+    FrSavedActor* actor = &floor->actors[actor_index];
     if(dx == 0 && dy == 0) return false;
     int16_t nx_i = (int16_t)actor->x + dx;
     int16_t ny_i = (int16_t)actor->y + dy;
@@ -77,15 +78,13 @@ void fr_warden_global_turn(FrGame* game) {
         FrFloorState* floor = &game->floors[floor_id - 1];
         if(!floor->generated || floor_id == game->floor) continue;
         for(uint8_t i = 0; i < FR_MAX_ACTORS; i++) {
-            FrActor* actor = &floor->actors[i];
+            FrSavedActor* actor = &floor->actors[i];
             if(!actor->active || actor->type != FR_MON_YONDER_WARDEN) continue;
 
             uint8_t entry_terrain = floor_id > game->floor ? FR_TERR_STAIRS_DOWN : FR_TERR_STAIRS_UP;
             uint8_t next_floor = floor_id > game->floor ? (uint8_t)(floor_id - 1) : (uint8_t)(floor_id + 1);
             uint8_t tx = floor_id > game->floor ? floor->up_x : floor->down_x;
             uint8_t ty = floor_id > game->floor ? floor->up_y : floor->down_y;
-            actor->target_x = tx;
-            actor->target_y = ty;
             actor->cooldown++;
             if(actor->cooldown < 8) {
                 int8_t dx = fr_sign_i8((int16_t)tx - (int16_t)actor->x);
@@ -95,7 +94,8 @@ void fr_warden_global_turn(FrGame* game) {
             }
 
             if(next_floor >= 1 && next_floor <= FR_MAX_FLOORS) {
-                FrActor traveler = *actor;
+                FrActor traveler;
+                fr_actor_from_saved_actor(&traveler, actor);
                 actor->active = false;
                 traveler.cooldown = 0;
                 if(next_floor == game->floor) {

@@ -8,7 +8,9 @@
 
 /* Pathfinding and random reachable tile helpers. */
 
-static uint16_t path_queue[FR_MAP_W * FR_MAP_H];
+#define FR_PATH_QUEUE_CAP 1024
+
+static uint16_t path_queue[FR_PATH_QUEUE_CAP];
 static uint8_t path_seen[FR_EXPLORED_BYTES];
 static uint8_t path_first_dir[(FR_MAP_W * FR_MAP_H + 3) / 4];
 
@@ -76,6 +78,7 @@ bool fr_find_path_step_current(
             if(fr_blocking_item_at(game, nx, ny)) continue;
             FrActor* blocker = fr_actor_at(game, nx, ny);
             if(blocker && blocker != actor && (nx != target_x || ny != target_y)) continue;
+            if(tail >= FR_PATH_QUEUE_CAP) return false;
             fr_path_seen_set(next);
             fr_path_first_dir_set(next, pos == start ? i : fr_path_first_dir_get(pos));
             path_queue[tail++] = next;
@@ -111,6 +114,7 @@ bool fr_path_exists(const FrGame* game, uint8_t start_x, uint8_t start_y, uint8_
             uint8_t terrain = fr_get_terrain(game, nx, ny);
             if(!fr_is_walkable(terrain) && (game->tiles[ny][nx] & FR_TILE_HIDDEN_DOOR) == 0) continue;
             if(fr_blocking_item_at(game, nx, ny)) continue;
+            if(tail >= FR_PATH_QUEUE_CAP) return false;
             fr_path_seen_set(next);
             path_queue[tail++] = next;
         }
