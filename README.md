@@ -40,10 +40,10 @@ quick deaths, and just enough dungeon texture to make the tiny screen feel old.
 |---|---|
 | ![FlipRogue inventory tabs](imgs/inventory-tabs.png) | ![FlipRogue flooded room](imgs/flooded-room.png) |
 
-**Flipper memory note:** FlipRogue is near the practical memory edge for a tiny
-external app. It may still occasionally quit with an out-of-memory error on
-device. Sorry about that; if it happens, restart the app right away and try
-another run.
+> **Flipper memory note:** FlipRogue is near the practical memory edge for a
+> tiny external app. It may still occasionally quit with an out-of-memory error
+> on device. Sorry about that; if it happens, restart the app right away and try
+> another run.
 
 ## v1.1 Scope
 
