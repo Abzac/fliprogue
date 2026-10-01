@@ -45,6 +45,12 @@ quick deaths, and just enough dungeon texture to make the tiny screen feel old.
 > on device. Sorry about that; if it happens, restart the app right away and try
 > another run.
 
+## Installation
+
+- **Flipper App Catalog:** Install FlipRogue from [Flipper Lab](https://lab.flipper.net/apps/fliprogue).
+- **Manual installation:** Download `fliprogue.fap` from the [latest release](https://github.com/Abzac/fliprogue/releases/latest) and copy it to `apps/Games/` on your Flipper Zero's microSD card.
+- **RogueMaster:** FlipRogue is also bundled with [RogueMaster firmware](https://github.com/RogueMaster/flipperzero-firmware-wPlugins). The included version depends on your firmware release.
+
 ## v1.2.* Scope
 
 The current release is the first public-ready build. Highlights:
