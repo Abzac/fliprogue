@@ -1,0 +1,119 @@
+name: Build release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing version tag to build (for example v1.2.2)'
+        required: true
+        type: string
+      create_draft:
+        description: 'Create a new draft release after a successful build'
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Validate tag name
+        id: version
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'Expected an existing vMAJOR.MINOR.PATCH tag.' >&2
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ steps.version.outputs.tag }}
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check manifest version
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          python - <<'PY'
+          import ast
+          import os
+          from pathlib import Path
+
+          tree = ast.parse(Path('application.fam').read_text())
+          versions = [
+              ast.literal_eval(kw.value)
+              for node in ast.walk(tree)
+              if isinstance(node, ast.Call)
+              and isinstance(node.func, ast.Name) and node.func.id == 'App'
+              for kw in node.keywords if kw.arg == 'fap_version'
+          ]
+          if versions != [os.environ['TAG'][1:]]:
+              raise SystemExit('Tag does not match application.fam fap_version')
+          PY
+
+      - name: Install pinned build tools and SDK
+        run: |
+          python -m pip install ufbt==0.2.6
+          python -m ufbt update --url=https://update.flipperzero.one/builds/firmware/1.4.3/flipper-z-f7-sdk-1.4.3.zip
+
+      - name: Test and build a fresh FAP
+        run: |
+          rm -f dist/fliprogue.fap
+          make package PYTHON=python
+          test -s dist/fliprogue.fap
+          cd dist
+          sha256sum fliprogue.fap > SHA256SUMS
+
+      - name: Save build for download
+        uses: actions/upload-artifact@v4
+        with:
+          name: fliprogue-${{ steps.version.outputs.tag }}
+          path: |
+            dist/fliprogue.fap
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30
+
+  draft:
+    needs: build
+    if: github.event_name == 'push' || inputs.create_draft
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: fliprogue-${{ needs.build.outputs.tag }}
+          path: release-assets
+
+      - name: Create draft only (never overwrite an existing release)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          cd release-assets
+          sha256sum --check SHA256SUMS
+          gh release create "$TAG" fliprogue.fap SHA256SUMS \
+            --verify-tag --draft --title "FlipRogue $TAG" \
+            --notes "Built from tag $TAG using uFBT 0.2.6 and official firmware SDK 1.4.3. Host tests passed. Review the changelog and add release notes before publishing. Download fliprogue.fap and copy it to apps/Games/ on your Flipper Zero SD card."

@@ -255,6 +255,32 @@ Host tests also exercise the real button handler and camera using small device
 stubs in `tests/host_sdk/`. Drawing, hardware feedback, and SD storage still need
 device checks; the stubs are not part of the app build.
 
+## Release Automation
+
+The `Build release` GitHub Actions workflow builds existing version tags with
+uFBT 0.2.6 and the official firmware SDK 1.4.3. It checks that the tag matches
+`fap_version`, runs host tests, and builds a fresh FAP rather than uploading the
+binary already tracked in `dist/`.
+
+- To test without creating a release: open **Actions > Build release > Run
+  workflow**, use the workflow from `main`, enter an existing tag such as
+  `v1.2.2`, and leave **Create a new draft release** unchecked. Download the
+  resulting artifact from the completed run; it contains `fliprogue.fap` and
+  `SHA256SUMS`. Artifacts are retained for 30 days.
+- For a future release, update `application.fam` and the changelog, commit the
+  changes (including this workflow), and push a matching `vMAJOR.MINOR.PATCH`
+  tag. A successful build creates a **draft** release with the binary attached.
+- Alternatively, run the workflow manually for an existing tag and enable
+  **Create a new draft release**. It will fail instead of overwriting an
+  existing release for that tag.
+- Review the draft, replace its placeholder notes, then publish manually.
+  Nothing is ever published automatically or submitted to the Flipper catalog.
+
+The workflow must be pushed to the default branch before the manual run button
+is available. No personal access token is needed: the draft job uses GitHub's
+repository-scoped `GITHUB_TOKEN`. Repository or organization Actions policies
+must permit the workflow and its `contents: write` permission.
+
 ## Repository Notes
 
 - License: GPL-3.0.
